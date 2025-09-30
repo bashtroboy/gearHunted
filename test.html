@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GearHunter Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #f57c00;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .notification-demo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 300px;
+            display: none;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .product-image {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 GearHunter Test Page</h1>
+        <p>Use this page to test all GearHunter features during development.</p>
+
+        <div class="grid">
+            <!-- Notification Testing -->
+            <div class="section">
+                <h2>🔔 Notification Testing</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="testNotificationPermission()">Check Permission</button>
+                    <button class="btn-primary" onclick="requestNotificationPermission()">Request Permission</button>
+                    <button class="btn-secondary" onclick="testNotification()">Test Notification</button>
+                    <button class="btn-warning" onclick="testNewProductNotification()">Test New Product</button>
+                </div>
+                <div class="input-group">
+                    <label>Notification Title:</label>
+                    <input type="text" id="notificationTitle" value="New GearHunter Deal!">
+                </div>
+                <div class="input-group">
+                    <label>Notification Body:</label>
+                    <textarea id="notificationBody" rows="2">Test notification from GearHunter</textarea>
+                </div>
+                <div id="notificationOutput" class="output"></div>
+            </div>
+
+            <!-- Database Inspection -->
+            <div class="section">
+                <h2>🗄️ Database Inspection</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="getDatabaseStats()">Get DB Stats</button>
+                    <button class="btn-secondary" onclick="getRecentProducts()">Recent Products</button>
+                    <button class="btn-secondary" onclick="getProductsSince()">Products Since</button>
+                    <button class="btn-warning" onclick="getAllProducts()">All Products</button>
+                </div>
+                <div class="input-group">
+                    <label>Products Since (timestamp):</label>
+                    <input type="number" id="sinceTimestamp" value="">
+                </div>
+                <div class="input-group">
+                    <label>Include Unavailable:</label>
+                    <select id="includeUnavailable">
+                        <option value="false">Available Only</option>
+                        <option value="true">Include Unavailable</option>
+                    </select>
+                </div>
+                <div id="databaseOutput" class="output"></div>
+            </div>
+
+            <!-- Scraper Testing -->
+            <div class="section">
+                <h2>🕷️ Scraper Testing</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="getSchedulerStatus()">Scheduler Status</button>
+                    <button class="btn-secondary" onclick="triggerPartialScrape()">Trigger Partial Scrape</button>
+                    <button class="btn-warning" onclick="triggerFullScrape()">Trigger Full Scrape</button>
+                    <button class="btn-danger" onclick="updateSchedulerInterval()">Update Interval</button>
+                </div>
+                <div class="input-group">
+                    <label>New Interval (minutes):</label>
+                    <input type="number" id="schedulerInterval" value="5" min="1" max="1440">
+                </div>
+                <div id="scraperOutput" class="output"></div>
+            </div>
+
+            <!-- API Testing -->
+            <div class="section">
+                <h2>🔌 API Testing</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="testAllEndpoints()">Test All APIs</button>
+                    <button class="btn-secondary" onclick="testCustomEndpoint()">Custom Request</button>
+                    <button class="btn-secondary" onclick="clearApiOutput()">Clear Output</button>
+                </div>
+                <div class="input-group">
+                    <label>Custom Endpoint:</label>
+                    <input type="text" id="customEndpoint" value="/api/stats" placeholder="/api/stats">
+                </div>
+                <div class="input-group">
+                    <label>HTTP Method:</label>
+                    <select id="httpMethod">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                </div>
+                <div id="apiOutput" class="output"></div>
+            </div>
+
+            <!-- Live Data Monitor -->
+            <div class="section">
+                <h2>📊 Live Data Monitor</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="startLiveMonitor()">Start Monitor</button>
+                    <button class="btn-danger" onclick="stopLiveMonitor()">Stop Monitor</button>
+                    <button class="btn-secondary" onclick="refreshStats()">Refresh Stats</button>
+                </div>
+                <div class="input-group">
+                    <label>Refresh Interval (seconds):</label>
+                    <input type="number" id="monitorInterval" value="10" min="5" max="300">
+                </div>
+                <div id="liveStats" class="status info">
+                    <strong>Live Stats:</strong> Not monitoring
+                </div>
+                <div id="monitorOutput" class="output"></div>
+            </div>
+
+            <!-- Product Browser -->
+            <div class="section">
+                <h2>🛍️ Product Browser</h2>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="loadProductSample()">Load Sample</button>
+                    <button class="btn-secondary" onclick="searchProducts()">Search</button>
+                    <button class="btn-warning" onclick="sortProducts()">Sort by Price</button>
+                </div>
+                <div class="input-group">
+                    <label>Search Term:</label>
+                    <input type="text" id="searchTerm" placeholder="guitar, amp, drum...">
+                </div>
+                <div class="input-group">
+                    <label>Limit Results:</label>
+                    <input type="number" id="resultLimit" value="10" min="1" max="100">
+                </div>
+                <div id="productBrowser"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Notification -->
+    <div id="demoNotification" class="notification-demo">
+        <strong>🎯 New Deal Alert!</strong><br>
+        <span id="demoNotificationText">Test notification content</span>
+        <button onclick="hideDemoNotification()" style="float: right; margin-top: 10px;">✕</button>
+    </div>
+
+    <script>
+        let liveMonitorInterval = null;
+
+        // Notification Testing
+        async function testNotificationPermission() {
+            const output = document.getElementById('notificationOutput');
+            output.textContent = `Notification permission: ${Notification.permission}\n`;
+            
+            if ('Notification' in window) {
+                output.textContent += 'Browser supports notifications: ✓\n';
+            } else {
+                output.textContent += 'Browser does NOT support notifications: ✗\n';
+            }
+        }
+
+        async function requestNotificationPermission() {
+            const output = document.getElementById('notificationOutput');
+            
+            if (!('Notification' in window)) {
+                output.textContent = 'Browser does not support notifications\n';
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            output.textContent = `Permission request result: ${permission}\n`;
+        }
+
+        function testNotification() {
+            const title = document.getElementById('notificationTitle').value;
+            const body = document.getElementById('notificationBody').value;
+            const output = document.getElementById('notificationOutput');
+
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title, {
+                    body: body,
+                    icon: '/favicon.ico'
+                });
+
+                notification.onclick = function() {
+                    output.textContent += 'Notification clicked!\n';
+                    window.focus();
+                };
+
+                output.textContent += `Notification sent: "${title}"\n`;
+            } else {
+                output.textContent += 'Notifications not permitted\n';
+            }
+        }
+
+        function testNewProductNotification() {
+            const demoProduct = {
+                title: "Fender Stratocaster - Sunburst",
+                salePrice: 899,
+                regularPrice: 1299,
+                location: "Toronto, Ontario"
+            };
+
+            const savings = demoProduct.regularPrice - demoProduct.salePrice;
+            const title = "🎸 New GearHunter Deal!";
+            const body = `${demoProduct.title} - $${demoProduct.salePrice} (Save $${savings})`;
+
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title, { body });
+                document.getElementById('notificationOutput').textContent += `Demo product notification sent\n`;
+            } else {
+                showDemoNotification(body);
+            }
+        }
+
+        function showDemoNotification(text) {
+            document.getElementById('demoNotificationText').textContent = text;
+            document.getElementById('demoNotification').style.display = 'block';
+            setTimeout(hideDemoNotification, 5000);
+        }
+
+        function hideDemoNotification() {
+            document.getElementById('demoNotification').style.display = 'none';
+        }
+
+        // Database Functions
+        async function getDatabaseStats() {
+            const output = document.getElementById('databaseOutput');
+            output.textContent = 'Loading database stats...\n';
+
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                output.textContent = JSON.stringify(stats, null, 2);
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getRecentProducts() {
+            const output = document.getElementById('databaseOutput');
+            const includeUnavailable = document.getElementById('includeUnavailable').value;
+            
+            output.textContent = 'Loading recent products...\n';
+
+            try {
+                const response = await fetch(`/api/products?includeUnavailable=${includeUnavailable}`);
+                const products = await response.json();
+                
+                const recent = products.slice(0, 10);
+                output.textContent = `Recent ${recent.length} products:\n\n${JSON.stringify(recent, null, 2)}`;
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getProductsSince() {
+            const output = document.getElementById('databaseOutput');
+            const timestamp = document.getElementById('sinceTimestamp').value || Date.now() - 86400000; // 24h ago
+            
+            output.textContent = `Loading products since ${new Date(parseInt(timestamp))}...\n`;
+
+            try {
+                const response = await fetch(`/api/products/new?since=${timestamp}`);
+                const products = await response.json();
+                output.textContent = `Products since timestamp:\n\n${JSON.stringify(products, null, 2)}`;
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getAllProducts() {
+            const output = document.getElementById('databaseOutput');
+            const includeUnavailable = document.getElementById('includeUnavailable').value;
+            
+            output.textContent = 'Loading all products... (this may take a while)\n';
+
+            try {
+                const response = await fetch(`/api/products?includeUnavailable=${includeUnavailable}`);
+                const products = await response.json();
+                output.textContent = `Total products: ${products.length}\n\nFirst 5 products:\n${JSON.stringify(products.slice(0, 5), null, 2)}`;
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Scraper Functions
+        async function getSchedulerStatus() {
+            const output = document.getElementById('scraperOutput');
+            output.textContent = 'Getting scheduler status...\n';
+
+            try {
+                const response = await fetch('/api/schedule');
+                const status = await response.json();
+                output.textContent = JSON.stringify(status, null, 2);
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function triggerPartialScrape() {
+            const output = document.getElementById('scraperOutput');
+            output.textContent = 'Triggering partial scrape...\n';
+
+            try {
+                const response = await fetch('/api/scrape', { method: 'POST' });
+                const result = await response.json();
+                output.textContent += `Scrape result:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                output.textContent += `Error: ${error.message}`;
+            }
+        }
+
+        async function triggerFullScrape() {
+            const output = document.getElementById('scraperOutput');
+            output.textContent = 'Triggering full scrape (this will take several minutes)...\n';
+
+            try {
+                const response = await fetch('/api/scrape/full', { method: 'POST' });
+                const result = await response.json();
+                output.textContent += `Full scrape result:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                output.textContent += `Error: ${error.message}`;
+            }
+        }
+
+        async function updateSchedulerInterval() {
+            const output = document.getElementById('scraperOutput');
+            const interval = document.getElementById('schedulerInterval').value;
+            
+            output.textContent = `Updating scheduler interval to ${interval} minutes...\n`;
+
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interval: parseInt(interval) })
+                });
+                const result = await response.json();
+                output.textContent += `Update result:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                output.textContent += `Error: ${error.message}`;
+            }
+        }
+
+        // API Testing
+        async function testAllEndpoints() {
+            const output = document.getElementById('apiOutput');
+            output.textContent = 'Testing all API endpoints...\n\n';
+
+            const endpoints = [
+                { path: '/api/stats', method: 'GET' },
+                { path: '/api/schedule', method: 'GET' },
+                { path: '/api/products?includeUnavailable=false', method: 'GET' }
+            ];
+
+            for (const endpoint of endpoints) {
+                try {
+                    output.textContent += `Testing ${endpoint.method} ${endpoint.path}...\n`;
+                    const response = await fetch(endpoint.path, { method: endpoint.method });
+                    const data = await response.json();
+                    output.textContent += `✓ Status: ${response.status}\n`;
+                    output.textContent += `✓ Response: ${JSON.stringify(data).substring(0, 100)}...\n\n`;
+                } catch (error) {
+                    output.textContent += `✗ Error: ${error.message}\n\n`;
+                }
+            }
+        }
+
+        async function testCustomEndpoint() {
+            const output = document.getElementById('apiOutput');
+            const endpoint = document.getElementById('customEndpoint').value;
+            const method = document.getElementById('httpMethod').value;
+            
+            output.textContent += `Testing ${method} ${endpoint}...\n`;
+
+            try {
+                const response = await fetch(endpoint, { method });
+                const data = await response.json();
+                output.textContent += `Status: ${response.status}\n`;
+                output.textContent += `Response:\n${JSON.stringify(data, null, 2)}\n\n`;
+            } catch (error) {
+                output.textContent += `Error: ${error.message}\n\n`;
+            }
+        }
+
+        function clearApiOutput() {
+            document.getElementById('apiOutput').textContent = '';
+        }
+
+        // Live Monitor
+        function startLiveMonitor() {
+            const interval = parseInt(document.getElementById('monitorInterval').value) * 1000;
+            const statusDiv = document.getElementById('liveStats');
+            const output = document.getElementById('monitorOutput');
+            
+            statusDiv.innerHTML = '<strong>Live Stats:</strong> Monitoring active';
+            statusDiv.className = 'status success';
+            
+            liveMonitorInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/stats');
+                    const stats = await response.json();
+                    const timestamp = new Date().toLocaleTimeString();
+                    output.textContent += `[${timestamp}] Products: ${stats.totalItems}, Avg Savings: $${stats.avgSavings}\n`;
+                    
+                    // Auto-scroll to bottom
+                    output.scrollTop = output.scrollHeight;
+                } catch (error) {
+                    output.textContent += `[${new Date().toLocaleTimeString()}] Error: ${error.message}\n`;
+                }
+            }, interval);
+        }
+
+        function stopLiveMonitor() {
+            if (liveMonitorInterval) {
+                clearInterval(liveMonitorInterval);
+                liveMonitorInterval = null;
+                
+                const statusDiv = document.getElementById('liveStats');
+                statusDiv.innerHTML = '<strong>Live Stats:</strong> Monitoring stopped';
+                statusDiv.className = 'status info';
+            }
+        }
+
+        async function refreshStats() {
+            const output = document.getElementById('monitorOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                output.textContent += `[${timestamp}] REFRESH - Products: ${stats.totalItems}, Avg Savings: $${stats.avgSavings}\n`;
+            } catch (error) {
+                output.textContent += `[${timestamp}] REFRESH ERROR: ${error.message}\n`;
+            }
+        }
+
+        // Product Browser
+        async function loadProductSample() {
+            const browser = document.getElementById('productBrowser');
+            const limit = document.getElementById('resultLimit').value;
+            
+            browser.innerHTML = 'Loading product sample...';
+
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                const sample = products.slice(0, parseInt(limit));
+                
+                displayProducts(sample);
+            } catch (error) {
+                browser.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function searchProducts() {
+            const browser = document.getElementById('productBrowser');
+            const searchTerm = document.getElementById('searchTerm').value.toLowerCase();
+            const limit = document.getElementById('resultLimit').value;
+            
+            if (!searchTerm) {
+                browser.innerHTML = 'Please enter a search term';
+                return;
+            }
+
+            browser.innerHTML = 'Searching products...';
+
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                const filtered = products
+                    .filter(p => p.title.toLowerCase().includes(searchTerm))
+                    .slice(0, parseInt(limit));
+                
+                displayProducts(filtered, `Search results for "${searchTerm}"`);
+            } catch (error) {
+                browser.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function sortProducts() {
+            const browser = document.getElementById('productBrowser');
+            const limit = document.getElementById('resultLimit').value;
+            
+            browser.innerHTML = 'Loading and sorting products...';
+
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                const sorted = products
+                    .filter(p => p.salePrice || p.price)
+                    .sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price))
+                    .slice(0, parseInt(limit));
+                
+                displayProducts(sorted, 'Products sorted by price (lowest first)');
+            } catch (error) {
+                browser.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        function displayProducts(products, title = 'Products') {
+            const browser = document.getElementById('productBrowser');
+            
+            if (products.length === 0) {
+                browser.innerHTML = `<div class="status info">${title}: No products found</div>`;
+                return;
+            }
+
+            let html = `<h3>${title} (${products.length})</h3>`;
+            html += '<table><thead><tr>';
+            html += '<th>Image</th><th>Title</th><th>Price</th><th>Location</th><th>ID</th>';
+            html += '</tr></thead><tbody>';
+
+            products.forEach(product => {
+                const price = product.salePrice || product.price || 'N/A';
+                const savings = product.salePrice && product.regularPrice ? 
+                    ` (Save $${product.regularPrice - product.salePrice})` : '';
+                
+                html += '<tr>';
+                html += `<td>${product.image ? `<img src="${product.image}" class="product-image" alt="Product">` : 'No image'}</td>`;
+                html += `<td>${product.title || 'No title'}</td>`;
+                html += `<td>$${price}${savings}</td>`;
+                html += `<td>${product.location || 'N/A'}</td>`;
+                html += `<td>${product.id || 'N/A'}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            browser.innerHTML = html;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default timestamp to 24 hours ago
+            document.getElementById('sinceTimestamp').value = Date.now() - 86400000;
+            
+            // Test notification permission on load
+            testNotificationPermission();
+        });
+    </script>
+</body>
+</html>
