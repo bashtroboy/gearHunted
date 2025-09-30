@@ -400,6 +400,48 @@
             margin-bottom: 2rem;
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-info {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-right: 1rem;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -495,8 +537,10 @@
 
         <div id="loading" class="loading">Loading gear deals...</div>
         <div id="error" class="error" style="display: none;"></div>
-        
+
         <div class="products-grid" id="productsGrid"></div>
+
+        <div class="pagination" id="pagination"></div>
     </div>
 
     <script>
@@ -504,6 +548,8 @@
         let filteredProducts = [];
         let currentFilter = 'available';
         let currentSort = 'newest';
+        let currentPage = 1;
+        const itemsPerPage = 100;
 
         async function loadProducts() {
             try {
@@ -628,10 +674,17 @@
 
             if (filteredProducts.length === 0) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">No products found matching your criteria.</div>';
+                document.getElementById('pagination').innerHTML = '';
                 return;
             }
 
-            grid.innerHTML = filteredProducts.map(product => {
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageProducts = filteredProducts.slice(startIndex, endIndex);
+
+            grid.innerHTML = pageProducts.map(product => {
                 const savings = product.regularPrice - product.salePrice;
                 const savingsPercent = Math.round((savings / product.regularPrice) * 100);
                 const isSold = !product.available;
@@ -659,9 +712,69 @@
                     </div>
                 `;
             }).join('');
+
+            // Render pagination
+            renderPagination(totalPages);
+
+            // Scroll to top of products grid
+            document.getElementById('productsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderPagination(totalPages) {
+            const paginationEl = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, filteredProducts.length);
+
+            let paginationHTML = `
+                <span class="pagination-info">Showing ${startItem}-${endItem} of ${filteredProducts.length} products</span>
+                <button class="pagination-btn" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>First</button>
+                <button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+            `;
+
+            // Show page numbers
+            const maxPageButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+
+            if (endPage - startPage < maxPageButtons - 1) {
+                startPage = Math.max(1, endPage - maxPageButtons + 1);
+            }
+
+            if (startPage > 1) {
+                paginationHTML += `<span class="pagination-btn" disabled>...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                paginationHTML += `<span class="pagination-btn" disabled>...</span>`;
+            }
+
+            paginationHTML += `
+                <button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                <button class="pagination-btn" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Last</button>
+            `;
+
+            paginationEl.innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProducts();
         }
 
         document.getElementById('searchInput').addEventListener('input', () => {
+            currentPage = 1; // Reset to first page on search
             applyFilters();
             renderProducts();
         });
@@ -676,6 +789,9 @@
                 // Update current filter
                 currentFilter = btn.dataset.filter;
 
+                // Reset to first page on filter change
+                currentPage = 1;
+
                 // Apply filters and render
                 applyFilters();
                 renderProducts();
@@ -685,6 +801,7 @@
         // Sort select event listener
         document.getElementById('sortSelect').addEventListener('change', (e) => {
             currentSort = e.target.value;
+            currentPage = 1; // Reset to first page on sort change
             applyFilters();
             renderProducts();
         });
