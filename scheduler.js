@@ -205,7 +205,7 @@ class GearHunterScheduler {
             product.phone = locationMatch[2].replace(/\D/g, '');
           }
 
-          if (product.title && product.url && product.id) {
+          if (product.title && product.url && product.id && !product.url.includes('/departments/')) {
             allProducts.push(product);
             productsOnThisPage++;
 
@@ -247,17 +247,23 @@ class GearHunterScheduler {
   async scrapeGearHunterDetailed(maxPages = null) {
     const baseUrl = 'https://www.long-mcquade.com/GearHunter/';
     const allProducts = [];
+    const seenIds = new Set();
     let page = 1;
     let consecutiveEmptyPages = 0;
+    let consecutiveLowPages = 0;
+
+    console.log('Starting full scrape (no page limit)...');
 
     while (true) {
       // Stop if we've hit the max pages limit (if specified)
       if (maxPages && page > maxPages) {
+        console.log(`Reached max pages limit: ${maxPages}`);
         break;
       }
 
       try {
         const url = page === 1 ? baseUrl : `${baseUrl}?Current=${(page-1)*32}`;
+        console.log(`Scraping page ${page}...`);
 
         const response = await fetch(url);
 
@@ -324,21 +330,40 @@ class GearHunterScheduler {
             product.phone = locationMatch[2].replace(/\D/g, '');
           }
 
-          // Only add if we have essential data
-          if (product.title && product.url) {
-            allProducts.push(product);
+          // Only add if we have essential data and haven't seen this ID
+          if (product.title && product.url && product.id && !product.url.includes('/departments/')) {
+            if (!seenIds.has(product.id)) {
+              allProducts.push(product);
+              seenIds.add(product.id);
+            }
             productsOnThisPage++;
           }
         });
 
+        const newProductsOnPage = allProducts.length - (allProducts.length - seenIds.size + productsOnThisPage);
+        console.log(`Page ${page}: found ${productsOnThisPage} products (${newProductsOnPage} new, total: ${allProducts.length})`);
+
         // Stop if we found no products on this page
         if (productsOnThisPage === 0) {
           consecutiveEmptyPages++;
+          console.log(`Empty page (${consecutiveEmptyPages}/2)`);
           if (consecutiveEmptyPages >= 2) {
+            console.log('Stopping: 2 consecutive empty pages');
             break;
           }
         } else {
           consecutiveEmptyPages = 0;
+        }
+
+        // Stop if we're only finding 1-2 products per page for 3 consecutive pages (likely pagination past end)
+        if (productsOnThisPage <= 2) {
+          consecutiveLowPages++;
+          if (consecutiveLowPages >= 3) {
+            console.log('Stopping: 3 consecutive pages with ≤2 products (pagination past end)');
+            break;
+          }
+        } else {
+          consecutiveLowPages = 0;
         }
 
         page++;
@@ -352,6 +377,7 @@ class GearHunterScheduler {
       }
     }
 
+    console.log(`Full scrape complete: ${allProducts.length} products from ${page - 1} pages`);
     return allProducts;
   }
 

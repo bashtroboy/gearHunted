@@ -175,6 +175,14 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify(result));
       return;
     }
+
+    // Manual full scrape endpoint
+    if (url.pathname === '/api/scrape/full' && req.method === 'POST') {
+      const result = await scheduler.runFullScrape();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
     
     // Static file serving
     let filePath;
