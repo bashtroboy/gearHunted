@@ -22,8 +22,9 @@ GearHunter is a real-time web scraper and notification system for Long & McQuade
 1. First run: `npm run scrape` to do a full scrape (all pages, ~4000+ products)
 2. Start server: `npm start`
 3. Access web interface at `http://localhost:3000`
-4. **Manual scraping** (`npm run scrape`): Full scrape, marks missing products as unavailable
-5. **Automatic scheduled scraping**: Partial scrape (first 10 pages only), updates/adds products without marking old ones unavailable
+4. **Automatic smart partial scrape** (every 5 minutes): Catches new listings immediately
+5. **Automatic daily full scrape** (2:00 AM): Marks sold products as unavailable
+6. **Manual full scrape** (`npm run scrape`): On-demand full scrape if needed
 
 ## Architecture
 
@@ -59,11 +60,16 @@ GearHunter is a real-time web scraper and notification system for Long & McQuade
 - Prevents concurrent scrapes with `isRunning` flag
 - Tracks `lastRun` and `nextRun` timestamps
 - Contains duplicate scraping logic (same as `scraper.js`)
-- **Smart partial scrape**: Uses early stopping when 90%+ products are duplicates
-- Stops after 2 consecutive pages with 90%+ duplicates (max 10 pages)
-- Typically scrapes 1-3 pages if DB is up to date, ~2-4 seconds
-- Does NOT mark missing products as unavailable (avoids false positives)
-- Product IDs are sequential, so newest products appear on first pages
+- **Smart partial scrape** (every 5 minutes): Uses early stopping when 90%+ products are duplicates
+  - Stops after 2 consecutive pages with 90%+ duplicates (max 10 pages)
+  - Typically scrapes 1-3 pages if DB is up to date, ~2-4 seconds
+  - Does NOT mark missing products as unavailable (avoids false positives)
+  - Product IDs are sequential, so newest products appear on first pages
+- **Daily full scrape** (2:00 AM): Scrapes all pages and marks sold items unavailable
+  - Automatically scheduled on server start
+  - Reschedules itself for next day after completion
+  - Prevents concurrent execution with partial scrapes
+  - Logs completion statistics
 - Can be controlled via API endpoints
 
 **Server (`server.js`)**
