@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GearHunter - Music Equipment Deals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls-section {
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-input {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .scheduler-section {
+            display: flex;
+            justify-content: center;
+        }
+
+        .scheduler-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .scheduler-card h3 {
+            margin-bottom: 1rem;
+            color: #1e293b;
+            font-size: 1.2rem;
+        }
+
+        .scheduler-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .scheduler-controls label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .scheduler-controls input[type="number"] {
+            padding: 0.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            width: 80px;
+            text-align: center;
+        }
+
+        .scheduler-controls input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .save-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .save-btn:hover {
+            background: #5a67d8;
+        }
+
+        .run-now-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .run-now-btn:hover {
+            background: #059669;
+        }
+
+        .run-now-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .schedule-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .status-indicator {
+            font-size: 0.8rem;
+        }
+
+        .status-indicator.active {
+            color: #10b981;
+        }
+
+        .status-indicator.inactive {
+            color: #ef4444;
+        }
+
+        .status-indicator.running {
+            color: #f59e0b;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .product-content {
+            padding: 1.5rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #1e293b;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-prices {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .sale-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dc2626;
+        }
+
+        .regular-price {
+            font-size: 1rem;
+            color: #64748b;
+            text-decoration: line-through;
+        }
+
+        .savings {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .product-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .location {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .monthly-payment {
+            background: #f0f9ff;
+            color: #0369a1;
+            padding: 0.5rem;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            color: #94a3b8;
+            font-size: 3rem;
+            width: 100%;
+            height: 200px;
+            flex-shrink: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                gap: 1rem;
+            }
+            
+            .stat-card {
+                padding: 1rem 1.5rem;
+                min-width: 120px;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🎵 GearHunter</h1>
+        <p>Premium Music Equipment at Unbeatable Prices</p>
+    </header>
+
+    <div class="container">
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgSavings">0%</div>
+                <div class="stat-label">Avg Savings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="bestDeal">$0</div>
+                <div class="stat-label">Best Deal</div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="search-bar">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="Search for gear, brands, or locations..."
+                >
+            </div>
+            
+            <div class="scheduler-section">
+                <div class="scheduler-card">
+                    <h3>Auto-Update Schedule</h3>
+                    <div class="scheduler-controls">
+                        <label for="scheduleInterval">Update every:</label>
+                        <input 
+                            type="number" 
+                            id="scheduleInterval" 
+                            value="5" 
+                            min="1" 
+                            max="1440"
+                        >
+                        <span>minutes</span>
+                        <button id="saveSchedule" class="save-btn">Save Schedule</button>
+                        <button id="runNow" class="run-now-btn">Update Now</button>
+                    </div>
+                    <div class="schedule-status" id="scheduleStatus">
+                        <span class="status-indicator" id="statusIndicator">●</span>
+                        <span id="statusText">Loading schedule...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Loading gear deals...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div class="products-grid" id="productsGrid"></div>
+    </div>
+
+    <script>
+        let allProducts = [];
+        let filteredProducts = [];
+
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const products = await response.json();
+                
+                allProducts = products.filter(product => 
+                    product.salePrice && 
+                    product.regularPrice && 
+                    product.title && 
+                    !product.title.includes('(') // Filter out category headers
+                );
+                
+                filteredProducts = [...allProducts];
+                await updateStats();
+                renderProducts();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Failed to load products. Please try again later.';
+            }
+        }
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('totalItems').textContent = stats.totalItems;
+                    document.getElementById('avgSavings').textContent = `${stats.avgSavings}%`;
+                    document.getElementById('bestDeal').textContent = `$${stats.bestDeal}`;
+                } else {
+                    // Fallback to client-side calculation
+                    const totalItems = allProducts.length;
+                    const avgSavings = totalItems > 0 ? Math.round(
+                        allProducts.reduce((sum, product) => {
+                            const savings = ((product.regularPrice - product.salePrice) / product.regularPrice) * 100;
+                            return sum + savings;
+                        }, 0) / totalItems
+                    ) : 0;
+                    const bestDealProduct = allProducts.reduce((best, current) => {
+                        const currentSavings = current.regularPrice - current.salePrice;
+                        const bestSavings = best ? best.regularPrice - best.salePrice : 0;
+                        return currentSavings > bestSavings ? current : best;
+                    }, null);
+                    const bestDeal = bestDealProduct ? bestDealProduct.regularPrice - bestDealProduct.salePrice : 0;
+
+                    document.getElementById('totalItems').textContent = totalItems;
+                    document.getElementById('avgSavings').textContent = `${avgSavings}%`;
+                    document.getElementById('bestDeal').textContent = `$${bestDeal}`;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">No products found matching your search.</div>';
+                return;
+            }
+
+            grid.innerHTML = filteredProducts.map(product => {
+                const savings = product.regularPrice - product.salePrice;
+                const savingsPercent = Math.round((savings / product.regularPrice) * 100);
+
+                return `
+                    <div class="product-card" onclick="window.open('${product.url}', '_blank')">
+                        ${product.image ?
+                            `<img src="${product.image}" alt="${product.title}" class="product-image" onerror="this.onerror=null; this.style.display='none'; this.parentElement.insertAdjacentHTML('afterbegin', '<div class=&quot;no-image&quot;>🎵</div>');">` :
+                            '<div class="no-image">🎵</div>'
+                        }
+                        <div class="product-content">
+                            <h3 class="product-title">${product.title}</h3>
+                            <div class="product-prices">
+                                <span class="sale-price">$${product.salePrice}</span>
+                                <span class="regular-price">$${product.regularPrice}</span>
+                                <span class="savings">Save ${savingsPercent}%</span>
+                            </div>
+                            <div class="product-details">
+                                ${product.location ? `<div class="location">📍 ${product.location}</div>` : ''}
+                                ${product.monthly ? `<div class="monthly-payment">Monthly: $${product.monthly}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredProducts = allProducts.filter(product => {
+                return product.title.toLowerCase().includes(searchTerm) ||
+                       (product.location && product.location.toLowerCase().includes(searchTerm));
+            });
+            
+            renderProducts();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterProducts);
+
+        // Scheduler functionality
+        let scheduleInterval = 5; // Default 5 minutes
+        let isRunning = false;
+
+        async function loadScheduleStatus() {
+            try {
+                const response = await fetch('/api/schedule');
+                if (response.ok) {
+                    const data = await response.json();
+                    scheduleInterval = data.interval;
+                    document.getElementById('scheduleInterval').value = scheduleInterval;
+                    updateScheduleStatus(data.active, data.lastRun, data.nextRun);
+                }
+            } catch (error) {
+                console.error('Error loading schedule status:', error);
+                updateScheduleStatus(false);
+            }
+        }
+
+        async function saveSchedule() {
+            const interval = parseInt(document.getElementById('scheduleInterval').value);
+            if (interval < 1 || interval > 1440) {
+                alert('Please enter a value between 1 and 1440 minutes.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ interval })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    scheduleInterval = interval;
+                    updateScheduleStatus(data.active, data.lastRun, data.nextRun);
+                    alert('Schedule saved successfully!');
+                } else {
+                    alert('Failed to save schedule.');
+                }
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                alert('Error saving schedule.');
+            }
+        }
+
+        async function runScrapeNow() {
+            if (isRunning) return;
+
+            const runButton = document.getElementById('runNow');
+            runButton.disabled = true;
+            runButton.textContent = 'Running...';
+            isRunning = true;
+            updateScheduleStatus(true, null, null, true);
+
+            try {
+                const response = await fetch('/api/scrape', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`Scrape completed!\nNew: ${data.newProducts}\nUpdated: ${data.updatedProducts}\nMarked unavailable: ${data.markedUnavailable || 0}`);
+                    // Reload products and stats
+                    await loadProducts();
+                } else {
+                    alert('Failed to run scraper.');
+                }
+            } catch (error) {
+                console.error('Error running scraper:', error);
+                alert('Error running scraper.');
+            } finally {
+                runButton.disabled = false;
+                runButton.textContent = 'Update Now';
+                isRunning = false;
+                loadScheduleStatus(); // Refresh status
+            }
+        }
+
+        function updateScheduleStatus(active, lastRun, nextRun, running = false) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            if (running) {
+                indicator.className = 'status-indicator running';
+                statusText.textContent = 'Scraping in progress...';
+            } else if (active) {
+                indicator.className = 'status-indicator active';
+                const next = nextRun ? new Date(nextRun).toLocaleTimeString() : 'Soon';
+                statusText.textContent = `Active - Next update: ${next}`;
+            } else {
+                indicator.className = 'status-indicator inactive';
+                statusText.textContent = 'Inactive';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('saveSchedule').addEventListener('click', saveSchedule);
+        document.getElementById('runNow').addEventListener('click', runScrapeNow);
+
+        // Load initial data
+        loadScheduleStatus();
+        loadProducts();
+    </script>
+</body>
+</html>

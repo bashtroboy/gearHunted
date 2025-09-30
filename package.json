@@ -1,0 +1,27 @@
+{
+  "name": "gearhunted",
+  "version": "1.0.0",
+  "description": "Real time scraper and notifier for L&M Gear Hunter page",
+  "homepage": "https://github.com/bashtroboy/gearHunted#readme",
+  "bugs": {
+    "url": "https://github.com/bashtroboy/gearHunted/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bashtroboy/gearHunted.git"
+  },
+  "license": "ISC",
+  "author": "Darren Hodder",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "scrape": "node scraper.js",
+    "validate": "node validator.js",
+    "test": "test"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "sqlite3": "^5.1.7"
+  }
+}
