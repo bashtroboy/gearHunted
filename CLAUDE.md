@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GearHunter is a real-time web scraper and notification system for Long & McQuade's GearHunter deals page. It consists of a web scraper, SQLite database, HTTP server, and web interface with automatic scheduling.
 
+## Working with Github
+- Every time code is committed and uploaded to Github, it should assigned to an issue that already exists and in a branch named after that issue
+- If an issue doesn't exist yet, make it and a new branch before uploading
+- After every commit and publish, create a PR against the issue, and merge the PR
+
 ## Commands
 
 ### Development
