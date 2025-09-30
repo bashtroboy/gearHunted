@@ -208,6 +208,42 @@ export class GearHunterDB {
     });
   }
 
+  async getProductsSince(sinceTimestamp) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT * FROM products
+        WHERE created_at > datetime(?, 'unixepoch', 'localtime')
+        AND available = 1
+        ORDER BY created_at DESC
+      `;
+
+      this.db.all(query, [Math.floor(sinceTimestamp / 1000)], (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const products = rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          url: row.url,
+          image: row.image,
+          salePrice: row.sale_price,
+          regularPrice: row.regular_price,
+          price: row.price,
+          location: row.location,
+          phone: row.phone,
+          monthly: row.monthly,
+          available: row.available === 1,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
+        }));
+
+        resolve(products);
+      });
+    });
+  }
+
   async markProductUnavailable(productId) {
     return new Promise((resolve, reject) => {
       this.db.run(

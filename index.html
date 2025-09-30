@@ -138,6 +138,68 @@
             border-color: #667eea;
         }
 
+        .notification-settings {
+            background: #fff9e6;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .notification-settings.enabled {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .notification-settings.denied {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .notification-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .notification-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .notification-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .notification-btn:hover {
+            background: #5a67d8;
+        }
+
+        .notification-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .notification-status {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
         .filter-btn {
             padding: 0.5rem 1rem;
             border: 2px solid #e2e8f0;
@@ -485,6 +547,17 @@
         </div>
 
         <div class="controls-section">
+            <div class="notification-settings" id="notificationSettings">
+                <label class="notification-label">
+                    <input type="checkbox" class="notification-checkbox" id="enableNotifications" checked>
+                    Get notified when new products are added
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="notification-status" id="notificationStatus">Checking permission...</span>
+                    <button class="notification-btn" id="requestPermission" style="display: none;">Enable Notifications</button>
+                </div>
+            </div>
+
             <div class="search-bar">
                 <input
                     type="text"
@@ -544,6 +617,199 @@
     </div>
 
     <script>
+        // Notification Manager
+        class NotificationManager {
+            constructor() {
+                this.enabled = localStorage.getItem('notificationsEnabled') !== 'false';
+                this.lastCheck = Date.now();
+                this.checkInterval = null;
+                this.permissionCheckInterval = null;
+            }
+
+            async init() {
+                this.updateUI();
+
+                // Check if notifications are supported
+                if (!('Notification' in window)) {
+                    this.updateStatus('Browser notifications not supported', 'denied');
+                    document.getElementById('enableNotifications').disabled = true;
+                    return;
+                }
+
+                // Update UI based on current permission
+                this.updatePermissionStatus();
+
+                // Set up event listeners
+                document.getElementById('enableNotifications').addEventListener('change', (e) => {
+                    this.enabled = e.target.checked;
+                    localStorage.setItem('notificationsEnabled', this.enabled);
+                    if (this.enabled) {
+                        this.start();
+                    } else {
+                        this.stop();
+                    }
+                    this.updateUI();
+                });
+
+                document.getElementById('requestPermission').addEventListener('click', () => {
+                    this.requestPermission();
+                });
+
+                // Start checking if enabled
+                if (this.enabled) {
+                    await this.start();
+                }
+            }
+
+            updatePermissionStatus() {
+                const permission = Notification.permission;
+
+                if (permission === 'granted') {
+                    this.updateStatus('✓ Notifications enabled', 'enabled');
+                    document.getElementById('requestPermission').style.display = 'none';
+                } else if (permission === 'denied') {
+                    this.updateStatus('Notifications blocked - please enable in browser settings', 'denied');
+                    document.getElementById('requestPermission').style.display = 'none';
+                    document.getElementById('enableNotifications').checked = false;
+                    this.enabled = false;
+                } else {
+                    this.updateStatus('Click to enable notifications', 'pending');
+                    document.getElementById('requestPermission').style.display = 'block';
+                }
+            }
+
+            updateStatus(message, state) {
+                const statusEl = document.getElementById('notificationStatus');
+                const settingsEl = document.getElementById('notificationSettings');
+
+                statusEl.textContent = message;
+                settingsEl.className = 'notification-settings';
+
+                if (state === 'enabled') {
+                    settingsEl.classList.add('enabled');
+                } else if (state === 'denied') {
+                    settingsEl.classList.add('denied');
+                }
+            }
+
+            updateUI() {
+                document.getElementById('enableNotifications').checked = this.enabled;
+                this.updatePermissionStatus();
+            }
+
+            async requestPermission() {
+                if (!('Notification' in window)) {
+                    alert('Browser notifications are not supported');
+                    return false;
+                }
+
+                const permission = await Notification.requestPermission();
+                this.updatePermissionStatus();
+
+                if (permission === 'granted') {
+                    this.enabled = true;
+                    document.getElementById('enableNotifications').checked = true;
+                    localStorage.setItem('notificationsEnabled', 'true');
+                    await this.start();
+
+                    // Show test notification
+                    new Notification('🎵 GearHunter', {
+                        body: 'Notifications enabled! You\'ll be notified of new products.',
+                        icon: '/favicon.ico',
+                        tag: 'gearhunter-test'
+                    });
+                }
+
+                return permission === 'granted';
+            }
+
+            async start() {
+                if (!this.enabled || Notification.permission !== 'granted') {
+                    return;
+                }
+
+                // Check for new products every 60 seconds
+                this.checkInterval = setInterval(() => this.checkForNewProducts(), 60000);
+
+                // Also check permission status periodically (in case user changes it in browser)
+                this.permissionCheckInterval = setInterval(() => this.updatePermissionStatus(), 5000);
+
+                console.log('Notification manager started');
+            }
+
+            stop() {
+                if (this.checkInterval) {
+                    clearInterval(this.checkInterval);
+                    this.checkInterval = null;
+                }
+                if (this.permissionCheckInterval) {
+                    clearInterval(this.permissionCheckInterval);
+                    this.permissionCheckInterval = null;
+                }
+                console.log('Notification manager stopped');
+            }
+
+            async checkForNewProducts() {
+                if (!this.enabled || Notification.permission !== 'granted') {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/products/new?since=${this.lastCheck}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const newProducts = await response.json();
+
+                    if (newProducts.length > 0) {
+                        this.notify(newProducts);
+                        this.lastCheck = Date.now();
+                    }
+                } catch (error) {
+                    console.error('Error checking for new products:', error);
+                }
+            }
+
+            notify(products) {
+                if (products.length === 1) {
+                    const product = products[0];
+                    const savings = Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100);
+
+                    const notification = new Notification('🎵 New Deal on GearHunter!', {
+                        body: `${product.title}\n$${product.salePrice} (save ${savings}%)`,
+                        icon: product.image || '/favicon.ico',
+                        tag: 'gearhunter-new-products',
+                        requireInteraction: false,
+                        silent: false
+                    });
+
+                    notification.onclick = () => {
+                        window.focus();
+                        window.open(product.url, '_blank');
+                        notification.close();
+                    };
+                } else {
+                    const notification = new Notification('🎵 GearHunter', {
+                        body: `${products.length} new products available!`,
+                        icon: '/favicon.ico',
+                        tag: 'gearhunter-new-products',
+                        requireInteraction: false,
+                        silent: false
+                    });
+
+                    notification.onclick = () => {
+                        window.focus();
+                        notification.close();
+                        // Reload to show new products
+                        window.location.reload();
+                    };
+                }
+            }
+        }
+
+        const notificationManager = new NotificationManager();
+
         let allProducts = [];
         let filteredProducts = [];
         let currentFilter = 'available';
@@ -912,6 +1178,9 @@
         // Load initial data
         loadScheduleStatus();
         loadProducts();
+
+        // Initialize notification manager
+        notificationManager.init();
     </script>
 </body>
 </html>
