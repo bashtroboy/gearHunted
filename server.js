@@ -76,10 +76,11 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/products') {
       const db = new GearHunterDB();
       await db.init();
-      
-      const products = await db.getAllProducts();
+
+      const includeUnavailable = url.searchParams.get('includeUnavailable') === 'true';
+      const products = await db.getAllProducts(includeUnavailable);
       await db.close();
-      
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(products));
       return;

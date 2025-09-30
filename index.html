@@ -98,6 +98,53 @@
             border-color: #667eea;
         }
 
+        .filter-bar {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .product-card.sold {
+            opacity: 0.6;
+        }
+
+        .product-card.sold .product-image {
+            filter: grayscale(50%);
+        }
+
+        .sold-badge {
+            background: #ef4444;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
         .scheduler-section {
             display: flex;
             justify-content: center;
@@ -364,14 +411,20 @@
 
         <div class="controls-section">
             <div class="search-bar">
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    id="searchInput" 
+                <input
+                    type="text"
+                    class="search-input"
+                    id="searchInput"
                     placeholder="Search for gear, brands, or locations..."
                 >
             </div>
-            
+
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="available">Available</button>
+                <button class="filter-btn" data-filter="sold">Sold</button>
+                <button class="filter-btn" data-filter="all">All</button>
+            </div>
+
             <div class="scheduler-section">
                 <div class="scheduler-card">
                     <h3>Auto-Update Schedule</h3>
@@ -405,23 +458,24 @@
     <script>
         let allProducts = [];
         let filteredProducts = [];
+        let currentFilter = 'available';
 
         async function loadProducts() {
             try {
-                const response = await fetch('/api/products');
+                const response = await fetch('/api/products?includeUnavailable=true');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const products = await response.json();
                 
-                allProducts = products.filter(product => 
-                    product.salePrice && 
-                    product.regularPrice && 
-                    product.title && 
+                allProducts = products.filter(product =>
+                    product.salePrice &&
+                    product.regularPrice &&
+                    product.title &&
                     !product.title.includes('(') // Filter out category headers
                 );
-                
-                filteredProducts = [...allProducts];
+
+                applyFilters();
                 await updateStats();
                 renderProducts();
                 document.getElementById('loading').style.display = 'none';
@@ -466,20 +520,42 @@
             }
         }
 
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredProducts = allProducts.filter(product => {
+                // Apply availability filter
+                let matchesAvailability = true;
+                if (currentFilter === 'available') {
+                    matchesAvailability = product.available;
+                } else if (currentFilter === 'sold') {
+                    matchesAvailability = !product.available;
+                }
+                // 'all' shows everything
+
+                // Apply search filter
+                const matchesSearch = product.title.toLowerCase().includes(searchTerm) ||
+                    (product.location && product.location.toLowerCase().includes(searchTerm));
+
+                return matchesAvailability && matchesSearch;
+            });
+        }
+
         function renderProducts() {
             const grid = document.getElementById('productsGrid');
-            
+
             if (filteredProducts.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">No products found matching your search.</div>';
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">No products found matching your criteria.</div>';
                 return;
             }
 
             grid.innerHTML = filteredProducts.map(product => {
                 const savings = product.regularPrice - product.salePrice;
                 const savingsPercent = Math.round((savings / product.regularPrice) * 100);
+                const isSold = !product.available;
 
                 return `
-                    <div class="product-card" onclick="window.open('${product.url}', '_blank')">
+                    <div class="product-card ${isSold ? 'sold' : ''}" onclick="window.open('${product.url}', '_blank')">
                         ${product.image ?
                             `<img src="${product.image}" alt="${product.title}" class="product-image" onerror="this.onerror=null; this.style.display='none'; this.parentElement.insertAdjacentHTML('afterbegin', '<div class=&quot;no-image&quot;>🎵</div>');">` :
                             '<div class="no-image">🎵</div>'
@@ -489,7 +565,10 @@
                             <div class="product-prices">
                                 <span class="sale-price">$${product.salePrice}</span>
                                 <span class="regular-price">$${product.regularPrice}</span>
-                                <span class="savings">Save ${savingsPercent}%</span>
+                                ${isSold ?
+                                    '<span class="sold-badge">Sold</span>' :
+                                    `<span class="savings">Save ${savingsPercent}%</span>`
+                                }
                             </div>
                             <div class="product-details">
                                 ${product.location ? `<div class="location">📍 ${product.location}</div>` : ''}
@@ -500,18 +579,26 @@
             }).join('');
         }
 
-        function filterProducts() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            filteredProducts = allProducts.filter(product => {
-                return product.title.toLowerCase().includes(searchTerm) ||
-                       (product.location && product.location.toLowerCase().includes(searchTerm));
-            });
-            
+        document.getElementById('searchInput').addEventListener('input', () => {
+            applyFilters();
             renderProducts();
-        }
+        });
 
-        document.getElementById('searchInput').addEventListener('input', filterProducts);
+        // Filter button event listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update current filter
+                currentFilter = btn.dataset.filter;
+
+                // Apply filters and render
+                applyFilters();
+                renderProducts();
+            });
+        });
 
         // Scheduler functionality
         let scheduleInterval = 5; // Default 5 minutes
