@@ -86,10 +86,30 @@ const server = createServer(async (req, res) => {
       return;
     }
     
+    if (url.pathname === '/api/products/new') {
+      const since = url.searchParams.get('since');
+      if (!since) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing "since" parameter' }));
+        return;
+      }
+
+      const db = new GearHunterDB();
+      await db.init();
+
+      const sinceTimestamp = parseInt(since);
+      const products = await db.getProductsSince(sinceTimestamp);
+      await db.close();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(products));
+      return;
+    }
+
     if (url.pathname === '/api/stats') {
       const db = new GearHunterDB();
       await db.init();
-      
+
       const products = await db.getAllProducts();
       await db.close();
       
@@ -151,6 +171,14 @@ const server = createServer(async (req, res) => {
     // Manual scrape endpoint
     if (url.pathname === '/api/scrape' && req.method === 'POST') {
       const result = await scheduler.runScrape();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
+    // Manual full scrape endpoint
+    if (url.pathname === '/api/scrape/full' && req.method === 'POST') {
+      const result = await scheduler.runFullScrape();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
       return;

@@ -184,8 +184,8 @@ async function scrapeGearHunterDetailed(maxPages = null) {
           product.phone = locationMatch[2].replace(/\D/g, '');
         }
 
-        // Only add if we have essential data
-        if (product.title && product.url) {
+        // Only add if we have essential data and it's not a category page
+        if (product.title && product.url && !product.url.includes('/departments/')) {
           allProducts.push(product);
           productsOnThisPage++;
         }
@@ -206,7 +206,12 @@ async function scrapeGearHunterDetailed(maxPages = null) {
 
       page++;
       
+      // Wait between requests
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
+    } catch (error) {
+      console.error(`Error scraping page ${page}:`, error.message);
+      break;
     }
   }
 
@@ -243,7 +248,11 @@ async function main() {
     
     // Still save to JSON file for backup
     const fs = await import('fs');
-    const filename = `search-results/gearhunter-products-${Date.now()}.json`;
+    const dirname = 'search-results';
+    if (!fs.existsSync(dirname)) {
+      fs.mkdirSync(dirname, { recursive: true });
+    }
+    const filename = `${dirname}/gearhunter-products-${Date.now()}.json`;
     fs.writeFileSync(filename, JSON.stringify(products, null, 2));
     console.log(`✓ Backup saved to ${filename}`);
     
