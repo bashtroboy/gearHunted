@@ -99,10 +99,43 @@
         }
 
         .filter-bar {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: flex;
             justify-content: center;
             gap: 0.5rem;
+        }
+
+        .sort-bar {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sort-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .sort-select {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            font-weight: 500;
+            transition: border-color 0.2s;
+        }
+
+        .sort-select:hover {
+            border-color: #667eea;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .filter-btn {
@@ -425,6 +458,17 @@
                 <button class="filter-btn" data-filter="all">All</button>
             </div>
 
+            <div class="sort-bar">
+                <span class="sort-label">Sort by:</span>
+                <select class="sort-select" id="sortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="savings-percent">Biggest Savings %</option>
+                    <option value="savings-amount">Biggest Savings $</option>
+                </select>
+            </div>
+
             <div class="scheduler-section">
                 <div class="scheduler-card">
                     <h3>Auto-Update Schedule</h3>
@@ -459,6 +503,7 @@
         let allProducts = [];
         let filteredProducts = [];
         let currentFilter = 'available';
+        let currentSort = 'newest';
 
         async function loadProducts() {
             try {
@@ -539,6 +584,43 @@
 
                 return matchesAvailability && matchesSearch;
             });
+
+            // Apply sorting
+            applySorting();
+        }
+
+        function applySorting() {
+            switch (currentSort) {
+                case 'price-low':
+                    filteredProducts.sort((a, b) => a.salePrice - b.salePrice);
+                    break;
+                case 'price-high':
+                    filteredProducts.sort((a, b) => b.salePrice - a.salePrice);
+                    break;
+                case 'savings-percent':
+                    filteredProducts.sort((a, b) => {
+                        const savingsA = ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
+                        const savingsB = ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
+                        return savingsB - savingsA;
+                    });
+                    break;
+                case 'savings-amount':
+                    filteredProducts.sort((a, b) => {
+                        const savingsA = a.regularPrice - a.salePrice;
+                        const savingsB = b.regularPrice - b.salePrice;
+                        return savingsB - savingsA;
+                    });
+                    break;
+                case 'newest':
+                default:
+                    // Default sort by creation date (newest first)
+                    filteredProducts.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || 0);
+                        const dateB = new Date(b.createdAt || 0);
+                        return dateB - dateA;
+                    });
+                    break;
+            }
         }
 
         function renderProducts() {
@@ -598,6 +680,13 @@
                 applyFilters();
                 renderProducts();
             });
+        });
+
+        // Sort select event listener
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            applyFilters();
+            renderProducts();
         });
 
         // Scheduler functionality

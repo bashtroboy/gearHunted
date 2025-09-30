@@ -205,13 +205,8 @@ async function scrapeGearHunterDetailed(maxPages = null) {
       }
 
       page++;
+      
 
-      // Wait between requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-    } catch (error) {
-      console.error(`Error scraping page ${page}:`, error.message);
-      break;
     }
   }
 
