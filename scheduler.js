@@ -9,6 +9,8 @@ class GearHunterScheduler {
     this.timeoutId = null;
     this.lastRun = null;
     this.nextRun = null;
+    this.dailyFullScrapeTimeoutId = null;
+    this.lastFullScrape = null;
   }
 
   start(intervalMinutes = this.interval) {
@@ -16,6 +18,7 @@ class GearHunterScheduler {
     this.interval = intervalMinutes;
     this.isActive = true;
     this.scheduleNext();
+    this.scheduleDailyFullScrape(); // Start daily full scrape schedule
     console.log(`Scheduler started: updating every ${this.interval} minutes`);
   }
 
@@ -24,9 +27,67 @@ class GearHunterScheduler {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
     }
+    if (this.dailyFullScrapeTimeoutId) {
+      clearTimeout(this.dailyFullScrapeTimeoutId);
+      this.dailyFullScrapeTimeoutId = null;
+    }
     this.isActive = false;
     this.nextRun = null;
     console.log('Scheduler stopped');
+  }
+
+  scheduleDailyFullScrape() {
+    // Calculate next 2:00 AM
+    const now = new Date();
+    const next2AM = new Date();
+    next2AM.setHours(2, 0, 0, 0);
+
+    // If it's already past 2 AM today, schedule for tomorrow
+    if (now >= next2AM) {
+      next2AM.setDate(next2AM.getDate() + 1);
+    }
+
+    const msUntil2AM = next2AM - now;
+
+    console.log(`Daily full scrape scheduled for: ${next2AM.toLocaleString()}`);
+
+    this.dailyFullScrapeTimeoutId = setTimeout(async () => {
+      await this.runFullScrape();
+      // Schedule next day's full scrape (24 hours from now)
+      this.scheduleDailyFullScrape();
+    }, msUntil2AM);
+  }
+
+  async runFullScrape() {
+    if (this.isRunning) {
+      console.log('Partial scrape already running, skipping full scrape');
+      return { newProducts: 0, updatedProducts: 0, markedUnavailable: 0, skipped: true };
+    }
+
+    this.isRunning = true;
+    this.lastFullScrape = new Date();
+
+    try {
+      console.log('Starting daily full scrape...');
+      // Full scrape - no page limit
+      const products = await this.scrapeGearHunterDetailed();
+
+      const db = new GearHunterDB();
+      await db.init();
+
+      // Mark products not in results as unavailable (true for full scrape)
+      const { newProducts, updatedProducts, markedUnavailable } = await db.addProducts(products, true);
+      await db.close();
+
+      console.log(`Daily full scrape completed: ${newProducts} new, ${updatedProducts} updated, ${markedUnavailable} marked unavailable`);
+
+      return { newProducts, updatedProducts, markedUnavailable };
+    } catch (error) {
+      console.error('Daily full scrape failed:', error);
+      return { newProducts: 0, updatedProducts: 0, markedUnavailable: 0, error: error.message };
+    } finally {
+      this.isRunning = false;
+    }
   }
 
   scheduleNext() {
@@ -300,8 +361,22 @@ class GearHunterScheduler {
       running: this.isRunning,
       interval: this.interval,
       lastRun: this.lastRun,
-      nextRun: this.nextRun
+      nextRun: this.nextRun,
+      lastFullScrape: this.lastFullScrape,
+      nextFullScrape: this.dailyFullScrapeTimeoutId ? this.getNextFullScrapeTime() : null
     };
+  }
+
+  getNextFullScrapeTime() {
+    const now = new Date();
+    const next2AM = new Date();
+    next2AM.setHours(2, 0, 0, 0);
+
+    if (now >= next2AM) {
+      next2AM.setDate(next2AM.getDate() + 1);
+    }
+
+    return next2AM;
   }
 }
 
