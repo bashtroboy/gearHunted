@@ -1,3 +1,76 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # Databases
 database/
 gearhunter.db
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Build outputs
+dist/
+build/
+
+# Search results cache (keep the structure but ignore the actual JSON files)
+search-results/*.json
+
+# Google Cloud credentials (only exclude service account keys)
+*-service-account-key.json
+google-credentials.json
+credentials.json
+service-account.json
+
+# Debug and test files
+notification-debug.html
+test.html
+
+# Claude Code
+.claude/
