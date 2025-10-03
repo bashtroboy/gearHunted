@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GearHunter Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .header h1 {
+            text-align: center;
+            margin: 0;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            max-height: 100px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .admin-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-panel h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .status-info {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .status-info p {
+            margin-bottom: 5px;
+        }
+        
+        .status-info strong {
+            color: #2c3e50;
+        }
+        
+        .console-container {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .console-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .console-header h3 {
+            margin: 0;
+        }
+        
+        .console-window {
+            background: #2c3e50;
+            color: #ecf0f1;
+            height: 400px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+        
+        .log-timestamp {
+            color: #95a5a6;
+            margin-right: 10px;
+        }
+        
+        .log-info {
+            color: #3498db;
+        }
+        
+        .log-success {
+            color: #27ae60;
+        }
+        
+        .log-warning {
+            color: #f39c12;
+        }
+        
+        .log-error {
+            color: #e74c3c;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="./assets/images/gearhunted-logo.jpg" alt="GearHunted" class="logo" />
+            </div>
+            <h1>🔧 Admin Panel</h1>
+        </div>
+        
+        <div class="admin-grid">
+            <div class="admin-panel">
+                <h2>Scheduler Configuration</h2>
+                <div class="status-info" id="statusInfo">
+                    <p><strong>Status:</strong> <span id="schedulerStatus">Loading...</span></p>
+                    <p><strong>Interval:</strong> <span id="currentInterval">-</span> minutes</p>
+                    <p><strong>Last Run:</strong> <span id="lastRun">-</span></p>
+                    <p><strong>Next Run:</strong> <span id="nextRun">-</span></p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="intervalInput">Update Interval (minutes)</label>
+                    <input type="number" id="intervalInput" min="1" max="1440" value="5" placeholder="Enter minutes (1-1440)">
+                </div>
+                
+                <button class="btn" id="updateScheduleBtn" onclick="updateSchedule()">
+                    Update Schedule
+                </button>
+            </div>
+            
+            <div class="admin-panel">
+                <h2>Manual Operations</h2>
+                <div class="form-group">
+                    <p>Trigger immediate scraping operations:</p>
+                </div>
+                
+                <button class="btn btn-success" id="partialScrapeBtn" onclick="runPartialScrape()">
+                    🔄 Quick Scrape
+                </button>
+                
+                <button class="btn btn-danger" id="fullScrapeBtn" onclick="runFullScrape()">
+                    🔍 Full Scrape
+                </button>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn" onclick="refreshStatus()">
+                        📊 Refresh Status
+                    </button>
+                    <button class="btn" onclick="clearConsole()">
+                        🗑️ Clear Console
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="console-container">
+            <div class="console-header">
+                <h3>📋 System Console</h3>
+                <button class="btn" onclick="clearConsole()" style="padding: 8px 15px; font-size: 14px;">Clear</button>
+            </div>
+            <div class="console-window" id="consoleWindow">
+                <div class="log-entry log-info">
+                    <span class="log-timestamp">[${new Date().toLocaleTimeString()}]</span>
+                    <span>Admin console initialized. Ready for operations.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let isLoading = false;
+        
+        // Initialize admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            logMessage('Admin panel loaded successfully', 'success');
+            refreshStatus();
+        });
+        
+        // Logging functions
+        function logMessage(message, type = 'info') {
+            const consoleWindow = document.getElementById('consoleWindow');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span><span>${message}</span>`;
+            consoleWindow.appendChild(logEntry);
+            consoleWindow.scrollTop = consoleWindow.scrollHeight;
+        }
+        
+        function clearConsole() {
+            const consoleWindow = document.getElementById('consoleWindow');
+            consoleWindow.innerHTML = '';
+            logMessage('Console cleared', 'info');
+        }
+        
+        // API functions
+        async function refreshStatus() {
+            try {
+                logMessage('Refreshing scheduler status...', 'info');
+                const response = await fetch('/api/schedule');
+                const data = await response.json();
+                
+                document.getElementById('schedulerStatus').textContent = data.isRunning ? 'Running' : 'Stopped';
+                document.getElementById('currentInterval').textContent = data.interval || 'Not set';
+                document.getElementById('lastRun').textContent = data.lastRun ? new Date(data.lastRun).toLocaleString() : 'Never';
+                document.getElementById('nextRun').textContent = data.nextRun ? new Date(data.nextRun).toLocaleString() : 'Not scheduled';
+                document.getElementById('intervalInput').value = data.interval || 5;
+                
+                logMessage(`Status updated - Running: ${data.isRunning}, Interval: ${data.interval}min`, 'success');
+            } catch (error) {
+                logMessage(`Error refreshing status: ${error.message}`, 'error');
+            }
+        }
+        
+        async function updateSchedule() {
+            const interval = parseInt(document.getElementById('intervalInput').value);
+            
+            if (!interval || interval < 1 || interval > 1440) {
+                logMessage('Invalid interval. Please enter a number between 1 and 1440 minutes.', 'error');
+                return;
+            }
+            
+            if (isLoading) return;
+            setLoading('updateScheduleBtn', true);
+            
+            try {
+                logMessage(`Updating schedule to ${interval} minutes...`, 'info');
+                
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ interval })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                logMessage(`Schedule updated successfully to ${interval} minutes`, 'success');
+                await refreshStatus();
+            } catch (error) {
+                logMessage(`Error updating schedule: ${error.message}`, 'error');
+            } finally {
+                setLoading('updateScheduleBtn', false);
+            }
+        }
+        
+        async function runPartialScrape() {
+            if (isLoading) return;
+            setLoading('partialScrapeBtn', true);
+            
+            try {
+                logMessage('Starting quick scrape...', 'info');
+                
+                const response = await fetch('/api/scrape', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                logMessage(`Quick scrape completed: ${data.newProducts || 0} new, ${data.updatedProducts || 0} updated`, 'success');
+                await refreshStatus();
+            } catch (error) {
+                logMessage(`Error during quick scrape: ${error.message}`, 'error');
+            } finally {
+                setLoading('partialScrapeBtn', false);
+            }
+        }
+        
+        async function runFullScrape() {
+            if (isLoading) return;
+            setLoading('fullScrapeBtn', true);
+            
+            try {
+                logMessage('Starting full scrape... This may take several minutes.', 'warning');
+                
+                const response = await fetch('/api/scrape/full', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                logMessage(`Full scrape completed: ${data.newProducts || 0} new, ${data.updatedProducts || 0} updated, ${data.markedUnavailable || 0} marked unavailable`, 'success');
+                await refreshStatus();
+            } catch (error) {
+                logMessage(`Error during full scrape: ${error.message}`, 'error');
+            } finally {
+                setLoading('fullScrapeBtn', false);
+            }
+        }
+        
+        function setLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.classList.add('loading');
+                button.innerHTML += '<span class="spinner"></span>';
+                isLoading = true;
+            } else {
+                button.classList.remove('loading');
+                const spinner = button.querySelector('.spinner');
+                if (spinner) spinner.remove();
+                isLoading = false;
+            }
+        }
+        
+        // Auto-refresh status every 30 seconds
+        setInterval(refreshStatus, 30000);
+    </script>
+</body>
+</html>

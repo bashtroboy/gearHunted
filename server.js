@@ -188,6 +188,8 @@ const server = createServer(async (req, res) => {
     let filePath;
     if (url.pathname === '/') {
       filePath = join(__dirname, 'index.html');
+    } else if (url.pathname === '/admin') {
+      filePath = join(__dirname, 'admin.html');
     } else {
       filePath = join(__dirname, url.pathname);
     }
@@ -201,14 +203,18 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}/`);
+  console.log('Web interfaces:');
+  console.log(`  http://localhost:${PORT}/ - Main product browser`);
+  console.log(`  http://localhost:${PORT}/admin - Admin panel`);
   console.log('API endpoints:');
   console.log(`  GET http://localhost:${PORT}/api/products - Get all products`);
   console.log(`  GET http://localhost:${PORT}/api/stats - Get statistics`);
   console.log(`  GET http://localhost:${PORT}/api/schedule - Get schedule status`);
   console.log(`  POST http://localhost:${PORT}/api/schedule - Set schedule interval`);
   console.log(`  POST http://localhost:${PORT}/api/scrape - Run scraper now`);
+  console.log(`  POST http://localhost:${PORT}/api/scrape/full - Run full scraper`);
   
   // Start default 5-minute schedule
   scheduler.start(5);

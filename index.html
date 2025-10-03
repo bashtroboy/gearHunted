@@ -19,11 +19,10 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: transparent;
+            color: #1e293b;
             padding: 2rem 0;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .header h1 {
@@ -35,6 +34,22 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        .logo-container {
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            max-height: 240px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .container {
@@ -240,111 +255,6 @@
             text-transform: uppercase;
         }
 
-        .scheduler-section {
-            display: flex;
-            justify-content: center;
-        }
-
-        .scheduler-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .scheduler-card h3 {
-            margin-bottom: 1rem;
-            color: #1e293b;
-            font-size: 1.2rem;
-        }
-
-        .scheduler-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .scheduler-controls label {
-            font-weight: 500;
-            color: #374151;
-        }
-
-        .scheduler-controls input[type="number"] {
-            padding: 0.5rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
-            width: 80px;
-            text-align: center;
-        }
-
-        .scheduler-controls input[type="number"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .save-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-
-        .save-btn:hover {
-            background: #5a67d8;
-        }
-
-        .run-now-btn {
-            background: #10b981;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-
-        .run-now-btn:hover {
-            background: #059669;
-        }
-
-        .run-now-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .schedule-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: #64748b;
-        }
-
-        .status-indicator {
-            font-size: 0.8rem;
-        }
-
-        .status-indicator.active {
-            color: #10b981;
-        }
-
-        .status-indicator.inactive {
-            color: #ef4444;
-        }
-
-        .status-indicator.running {
-            color: #f59e0b;
-        }
-
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -526,8 +436,9 @@
 </head>
 <body>
     <header class="header">
-        <h1>🎵 GearHunter</h1>
-        <p>Premium Music Equipment at Unbeatable Prices</p>
+        <div class="logo-container">
+            <img src="./assets/images/gearhunted-logo.jpg" alt="GearHunted" class="logo" />
+        </div>
     </header>
 
     <div class="container">
@@ -584,28 +495,6 @@
                 </select>
             </div>
 
-            <div class="scheduler-section">
-                <div class="scheduler-card">
-                    <h3>Auto-Update Schedule</h3>
-                    <div class="scheduler-controls">
-                        <label for="scheduleInterval">Update every:</label>
-                        <input 
-                            type="number" 
-                            id="scheduleInterval" 
-                            value="5" 
-                            min="1" 
-                            max="1440"
-                        >
-                        <span>minutes</span>
-                        <button id="saveSchedule" class="save-btn">Save Schedule</button>
-                        <button id="runNow" class="run-now-btn">Update Now</button>
-                    </div>
-                    <div class="schedule-status" id="scheduleStatus">
-                        <span class="status-indicator" id="statusIndicator">●</span>
-                        <span id="statusText">Loading schedule...</span>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="loading" class="loading">Loading gear deals...</div>
@@ -981,9 +870,6 @@
 
             // Render pagination
             renderPagination(totalPages);
-
-            // Scroll to top of products grid
-            document.getElementById('productsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function renderPagination(totalPages) {
@@ -1072,111 +958,10 @@
             renderProducts();
         });
 
-        // Scheduler functionality
-        let scheduleInterval = 5; // Default 5 minutes
-        let isRunning = false;
 
-        async function loadScheduleStatus() {
-            try {
-                const response = await fetch('/api/schedule');
-                if (response.ok) {
-                    const data = await response.json();
-                    scheduleInterval = data.interval;
-                    document.getElementById('scheduleInterval').value = scheduleInterval;
-                    updateScheduleStatus(data.active, data.lastRun, data.nextRun);
-                }
-            } catch (error) {
-                console.error('Error loading schedule status:', error);
-                updateScheduleStatus(false);
-            }
-        }
 
-        async function saveSchedule() {
-            const interval = parseInt(document.getElementById('scheduleInterval').value);
-            if (interval < 1 || interval > 1440) {
-                alert('Please enter a value between 1 and 1440 minutes.');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/schedule', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ interval })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    scheduleInterval = interval;
-                    updateScheduleStatus(data.active, data.lastRun, data.nextRun);
-                    alert('Schedule saved successfully!');
-                } else {
-                    alert('Failed to save schedule.');
-                }
-            } catch (error) {
-                console.error('Error saving schedule:', error);
-                alert('Error saving schedule.');
-            }
-        }
-
-        async function runScrapeNow() {
-            if (isRunning) return;
-
-            const runButton = document.getElementById('runNow');
-            runButton.disabled = true;
-            runButton.textContent = 'Running...';
-            isRunning = true;
-            updateScheduleStatus(true, null, null, true);
-
-            try {
-                const response = await fetch('/api/scrape', {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    alert(`Scrape completed!\nNew: ${data.newProducts}\nUpdated: ${data.updatedProducts}\nMarked unavailable: ${data.markedUnavailable || 0}`);
-                    // Reload products and stats
-                    await loadProducts();
-                } else {
-                    alert('Failed to run scraper.');
-                }
-            } catch (error) {
-                console.error('Error running scraper:', error);
-                alert('Error running scraper.');
-            } finally {
-                runButton.disabled = false;
-                runButton.textContent = 'Update Now';
-                isRunning = false;
-                loadScheduleStatus(); // Refresh status
-            }
-        }
-
-        function updateScheduleStatus(active, lastRun, nextRun, running = false) {
-            const indicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('statusText');
-
-            if (running) {
-                indicator.className = 'status-indicator running';
-                statusText.textContent = 'Scraping in progress...';
-            } else if (active) {
-                indicator.className = 'status-indicator active';
-                const next = nextRun ? new Date(nextRun).toLocaleTimeString() : 'Soon';
-                statusText.textContent = `Active - Next update: ${next}`;
-            } else {
-                indicator.className = 'status-indicator inactive';
-                statusText.textContent = 'Inactive';
-            }
-        }
-
-        // Event listeners
-        document.getElementById('saveSchedule').addEventListener('click', saveSchedule);
-        document.getElementById('runNow').addEventListener('click', runScrapeNow);
 
         // Load initial data
-        loadScheduleStatus();
         loadProducts();
 
         // Initialize notification manager

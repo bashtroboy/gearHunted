@@ -31,6 +31,38 @@ A real-time scraper and web interface for Long & McQuade's GearHunter deals, now
 
 4. **View deals**: Open http://localhost:3000 in your browser
 
+## Deployment
+
+The application is configured to deploy to Google Cloud Run in the `gearhunted` project.
+
+### Prerequisites
+- Google Cloud CLI installed and configured
+- Access to the `gearhunted` Google Cloud project
+- Docker installed locally
+
+### Deploy to Google Cloud
+```bash
+npm run deploy
+```
+
+This will:
+1. Set the gcloud project to `gearhunted`
+2. Build the Docker image using Cloud Build
+3. Deploy to Cloud Run in the `us-east1` region
+4. Configure the service with 1GB memory, 2 CPUs, and 15-minute timeout
+
+The deployed service will be available at: `https://gearhunted-[PROJECT-NUMBER].us-east1.run.app`
+
+### Manual Deployment Steps
+If you prefer manual deployment:
+```bash
+# Set the project
+gcloud config set project gearhunted
+
+# Build and deploy
+gcloud builds submit --config cloudbuild.yaml --substitutions SHORT_SHA=latest
+```
+
 ## Database Schema
 
 The SQLite database (`gearhunter.db`) contains a `products` table with:

@@ -18,6 +18,7 @@
     "start": "node server.js",
     "scrape": "node scraper.js",
     "validate": "node validator.js",
+    "deploy": "gcloud config set project gearhunted && gcloud builds submit --config cloudbuild.yaml --substitutions SHORT_SHA=latest",
     "test": "test"
   },
   "dependencies": {
