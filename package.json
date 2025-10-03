@@ -18,11 +18,16 @@
     "start": "node server.js",
     "scrape": "node scraper.js",
     "validate": "node validator.js",
+    "test-db": "node test-db.js",
+    "setup-cloudsql": "./scripts/setup-cloudsql.sh",
     "deploy": "gcloud config set project gearhunted && gcloud builds submit --config cloudbuild.yaml --substitutions SHORT_SHA=latest",
-    "test": "test"
+    "test": "node test-db.js"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.0",
     "cheerio": "^1.1.2",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
     "sqlite3": "^5.1.7"
   }
 }

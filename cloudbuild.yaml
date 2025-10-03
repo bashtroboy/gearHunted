@@ -27,6 +27,10 @@ steps:
       - '2'
       - '--timeout'
       - '900'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,INSTANCE_CONNECTION_NAME=gearhunted:us-east1:gearhunted-db,DB_NAME=gearhunted,DB_USER=postgres,GOOGLE_CLOUD_PROJECT=gearhunted'
+      - '--add-cloudsql-instances'
+      - 'gearhunted:us-east1:gearhunted-db'
 
 images:
   - 'us-central1-docker.pkg.dev/gearhunted/gearhunted/gearhunted:$SHORT_SHA'

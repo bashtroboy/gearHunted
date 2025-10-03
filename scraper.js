@@ -276,5 +276,10 @@ async function main() {
   }
 }
 
-// Run the scraper
-main();
+// Export the main function for use in jobs
+export { main as scrape };
+
+// Run the scraper only if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

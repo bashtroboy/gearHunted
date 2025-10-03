@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy application files
+COPY . .
+
+# Set environment variables for Cloud Run Jobs
+ENV NODE_ENV=production
+
+# Run the job (not the server)
+CMD ["node", "job.js"]

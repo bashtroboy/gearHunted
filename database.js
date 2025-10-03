@@ -1,30 +1,74 @@
-import sqlite3 from 'sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import pg from 'pg';
+import dotenv from 'dotenv';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+dotenv.config();
 
-const dbPath = join(__dirname, 'database', 'gearhunter.db');
+const { Client } = pg;
 
 export class GearHunterDB {
   constructor() {
-    this.db = null;
+    this.client = null;
+    this.secretClient = new SecretManagerServiceClient();
+  }
+
+  async getSecret(secretName) {
+    try {
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'gearhunted';
+      const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+      
+      const [version] = await this.secretClient.accessSecretVersion({ name });
+      const payload = version.payload.data.toString('utf8');
+      return payload;
+    } catch (error) {
+      console.error(`Error accessing secret ${secretName}:`, error);
+      // Fallback to environment variable if secret manager fails
+      return process.env.DB_PASSWORD;
+    }
   }
 
   async init() {
-    return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        console.log('Connected to SQLite database');
-        this.createTables()
-          .then(() => resolve())
-          .catch(reject);
-      });
-    });
+    try {
+      // Get database password from Secret Manager or environment variable
+      const dbPassword = process.env.DB_PASSWORD || await this.getSecret('DB_PASSWORD');
+      
+      // Cloud Run with Cloud SQL uses Unix domain sockets
+      const isCloudRun = process.env.NODE_ENV === 'production' && process.env.INSTANCE_CONNECTION_NAME;
+      
+      let connectionConfig;
+      
+      if (isCloudRun) {
+        // Production: Use Cloud SQL Unix socket connection
+        const instanceConnectionName = process.env.INSTANCE_CONNECTION_NAME;
+        connectionConfig = {
+          host: `/cloudsql/${instanceConnectionName}`,
+          database: process.env.DB_NAME || 'gearhunted',
+          user: process.env.DB_USER || 'postgres',
+          password: dbPassword,
+        };
+        console.log('Using Cloud SQL Unix socket connection');
+      } else {
+        // Development: Use TCP connection
+        connectionConfig = {
+          host: process.env.DB_HOST || 'localhost',
+          port: process.env.DB_PORT || 5432,
+          database: process.env.DB_NAME || 'gearhunted',
+          user: process.env.DB_USER || 'postgres',
+          password: dbPassword,
+          ssl: false
+        };
+        console.log('Using TCP connection for local development');
+      }
+
+      this.client = new Client(connectionConfig);
+
+      await this.client.connect();
+      console.log('Connected to PostgreSQL database');
+      await this.createTables();
+    } catch (error) {
+      console.error('Database connection error:', error);
+      throw error;
+    }
   }
 
   async createTables() {
@@ -34,57 +78,59 @@ export class GearHunterDB {
         title TEXT,
         url TEXT,
         image TEXT,
-        sale_price REAL,
-        regular_price REAL,
-        price REAL,
+        sale_price DECIMAL(10,2),
+        regular_price DECIMAL(10,2),
+        price DECIMAL(10,2),
         location TEXT,
         phone TEXT,
-        monthly REAL,
+        monthly DECIMAL(10,2),
         available INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(createTableSQL, (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        console.log('Products table created or verified');
-
-        // Add available column if it doesn't exist (for existing databases)
-        this.db.run('ALTER TABLE products ADD COLUMN available INTEGER DEFAULT 1', (alterErr) => {
-          // Ignore error if column already exists
-          resolve();
-        });
-      });
-    });
+    try {
+      await this.client.query(createTableSQL);
+      console.log('Products table created or verified');
+    } catch (error) {
+      console.error('Error creating tables:', error);
+      throw error;
+    }
   }
 
   async productExists(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get('SELECT id FROM products WHERE id = ?', [id], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(!!row);
-      });
-    });
+    try {
+      const result = await this.client.query('SELECT id FROM products WHERE id = $1', [id]);
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error checking if product exists:', error);
+      throw error;
+    }
   }
 
   async addProduct(product) {
     const insertSQL = `
-      INSERT OR REPLACE INTO products (
+      INSERT INTO products (
         id, title, url, image, sale_price, regular_price, 
-        price, location, phone, monthly, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        price, location, phone, monthly, available, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        url = EXCLUDED.url,
+        image = EXCLUDED.image,
+        sale_price = EXCLUDED.sale_price,
+        regular_price = EXCLUDED.regular_price,
+        price = EXCLUDED.price,
+        location = EXCLUDED.location,
+        phone = EXCLUDED.phone,
+        monthly = EXCLUDED.monthly,
+        available = 1,
+        updated_at = CURRENT_TIMESTAMP
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(insertSQL, [
+    try {
+      const result = await this.client.query(insertSQL, [
         product.id,
         product.title,
         product.url,
@@ -95,14 +141,12 @@ export class GearHunterDB {
         product.location,
         product.phone,
         product.monthly
-      ], function(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(this.changes);
-      });
-    });
+      ]);
+      return result.rowCount;
+    } catch (error) {
+      console.error('Error adding product:', error);
+      throw error;
+    }
   }
 
   async addProducts(products, markMissingAsUnavailable = true) {
@@ -116,7 +160,7 @@ export class GearHunterDB {
     // Mark products as unavailable if they're no longer in scraping results
     // Only do this if markMissingAsUnavailable is true (should only be true for full scrapes)
     if (markMissingAsUnavailable && scrapedIds.length > 0) {
-      const placeholders = scrapedIds.map(() => '?').join(',');
+      const placeholders = scrapedIds.map((_, index) => `$${index + 1}`).join(',');
       const markUnavailableSQL = `
         UPDATE products
         SET available = 0, updated_at = CURRENT_TIMESTAMP
@@ -124,16 +168,8 @@ export class GearHunterDB {
       `;
 
       try {
-        const changes = await new Promise((resolve, reject) => {
-          this.db.run(markUnavailableSQL, scrapedIds, function(err) {
-            if (err) {
-              reject(err);
-              return;
-            }
-            resolve(this.changes);
-          });
-        });
-        markedUnavailable = changes;
+        const result = await this.client.query(markUnavailableSQL, scrapedIds);
+        markedUnavailable = result.rowCount;
         if (markedUnavailable > 0) {
           console.log(`Marked ${markedUnavailable} product(s) as unavailable (no longer in scrape results)`);
         }
@@ -164,132 +200,114 @@ export class GearHunterDB {
   }
 
   async getAllProducts(includeUnavailable = false) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = includeUnavailable
-        ? 'SELECT * FROM products ORDER BY created_at DESC'
-        : 'SELECT * FROM products WHERE available = 1 ORDER BY created_at DESC';
+        ? 'SELECT * FROM products ORDER BY id DESC'
+        : 'SELECT * FROM products WHERE available = 1 ORDER BY id DESC';
 
-      this.db.all(query, (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      const result = await this.client.query(query);
 
-        const products = rows.map(row => ({
-          id: row.id,
-          title: row.title,
-          url: row.url,
-          image: row.image,
-          salePrice: row.sale_price,
-          regularPrice: row.regular_price,
-          price: row.price,
-          location: row.location,
-          phone: row.phone,
-          monthly: row.monthly,
-          available: row.available === 1,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at
-        }));
+      const products = result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        image: row.image,
+        salePrice: parseFloat(row.sale_price) || null,
+        regularPrice: parseFloat(row.regular_price) || null,
+        price: parseFloat(row.price) || null,
+        location: row.location,
+        phone: row.phone,
+        monthly: parseFloat(row.monthly) || null,
+        available: row.available === 1,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
 
-        resolve(products);
-      });
-    });
+      return products;
+    } catch (error) {
+      console.error('Error getting all products:', error);
+      throw error;
+    }
   }
 
   async getProductsCount() {
-    return new Promise((resolve, reject) => {
-      this.db.get('SELECT COUNT(*) as count FROM products WHERE available = 1', (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(row.count);
-      });
-    });
+    try {
+      const result = await this.client.query('SELECT COUNT(*) as count FROM products WHERE available = 1');
+      return parseInt(result.rows[0].count);
+    } catch (error) {
+      console.error('Error getting products count:', error);
+      throw error;
+    }
   }
 
   async getProductsSince(sinceTimestamp) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
         SELECT * FROM products
-        WHERE created_at > datetime(?, 'unixepoch', 'localtime')
+        WHERE created_at > to_timestamp($1)
         AND available = 1
-        ORDER BY created_at DESC
+        ORDER BY id DESC
       `;
 
-      this.db.all(query, [Math.floor(sinceTimestamp / 1000)], (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      const result = await this.client.query(query, [Math.floor(sinceTimestamp / 1000)]);
 
-        const products = rows.map(row => ({
-          id: row.id,
-          title: row.title,
-          url: row.url,
-          image: row.image,
-          salePrice: row.sale_price,
-          regularPrice: row.regular_price,
-          price: row.price,
-          location: row.location,
-          phone: row.phone,
-          monthly: row.monthly,
-          available: row.available === 1,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at
-        }));
+      const products = result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        image: row.image,
+        salePrice: parseFloat(row.sale_price) || null,
+        regularPrice: parseFloat(row.regular_price) || null,
+        price: parseFloat(row.price) || null,
+        location: row.location,
+        phone: row.phone,
+        monthly: parseFloat(row.monthly) || null,
+        available: row.available === 1,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
 
-        resolve(products);
-      });
-    });
+      return products;
+    } catch (error) {
+      console.error('Error getting products since timestamp:', error);
+      throw error;
+    }
   }
 
   async markProductUnavailable(productId) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        'UPDATE products SET available = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [productId],
-        function(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(this.changes);
-        }
+    try {
+      const result = await this.client.query(
+        'UPDATE products SET available = 0, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [productId]
       );
-    });
+      return result.rowCount;
+    } catch (error) {
+      console.error('Error marking product unavailable:', error);
+      throw error;
+    }
   }
 
   async markProductAvailable(productId) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        'UPDATE products SET available = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [productId],
-        function(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(this.changes);
-        }
+    try {
+      const result = await this.client.query(
+        'UPDATE products SET available = 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [productId]
       );
-    });
+      return result.rowCount;
+    } catch (error) {
+      console.error('Error marking product available:', error);
+      throw error;
+    }
   }
 
   async close() {
-    return new Promise((resolve) => {
-      if (this.db) {
-        this.db.close((err) => {
-          if (err) {
-            console.error('Error closing database:', err);
-          } else {
-            console.log('Database connection closed');
-          }
-          resolve();
-        });
-      } else {
-        resolve();
+    try {
+      if (this.client) {
+        await this.client.end();
+        console.log('Database connection closed');
       }
-    });
+    } catch (error) {
+      console.error('Error closing database:', error);
+    }
   }
 }

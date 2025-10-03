@@ -13,8 +13,7 @@ RUN npm ci --only=production
 # Copy application files
 COPY . .
 
-# Create database directory with proper permissions
-RUN mkdir -p database && chmod 755 database
+# No longer need SQLite database directory for PostgreSQL
 
 # Expose port
 EXPOSE 8080

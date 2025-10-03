@@ -814,11 +814,11 @@
                     break;
                 case 'newest':
                 default:
-                    // Default sort by creation date (newest first)
+                    // Default sort by product ID (newest first - higher IDs are newer)
                     filteredProducts.sort((a, b) => {
-                        const dateA = new Date(a.createdAt || 0);
-                        const dateB = new Date(b.createdAt || 0);
-                        return dateB - dateA;
+                        const idA = parseInt(a.id || 0);
+                        const idB = parseInt(b.id || 0);
+                        return idB - idA;
                     });
                     break;
             }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GearHunter is a real-time web scraper and notification system for Long & McQuade's GearHunter deals page. It consists of a web scraper, SQLite database, HTTP server, and web interface with automatic scheduling.
+GearHunter is a real-time web scraper and notification system for Long & McQuade's GearHunter deals page. It consists of a web scraper, PostgreSQL database (Google Cloud SQL), HTTP server, and web interface with automatic scheduling.
 
 ## Working with Github
 - Every time code is committed and uploaded to Github, it should assigned to an issue that already exists and in a branch named after that issue
@@ -17,6 +17,8 @@ GearHunter is a real-time web scraper and notification system for Long & McQuade
 - `npm start` - Start the web server (default port 3000) with automatic 5-minute scraping schedule
 - `npm run scrape` - Run the scraper once to populate/update the database
 - `npm run validate` - (Optional) Manually check individual product pages for availability
+- `npm test` or `npm run test-db` - Test PostgreSQL database connection
+- `npm run setup-cloudsql` - Set up Google Cloud SQL instance (requires gcloud CLI)
 
 ### Workflow
 1. First run: `npm run scrape` to do a full scrape (all pages, ~4000+ products)
@@ -41,14 +43,16 @@ GearHunter is a real-time web scraper and notification system for Long & McQuade
 - **Full scrape**: Marks products not in results as unavailable (run manually via `npm run scrape`)
 
 **Database (`database.js`)**
-- SQLite wrapper class (`GearHunterDB`)
+- PostgreSQL wrapper class (`GearHunterDB`) using Google Cloud SQL
 - Products table uses product ID as primary key for duplicate prevention
-- `INSERT OR REPLACE` pattern updates existing products
+- `INSERT ... ON CONFLICT ... DO UPDATE` pattern updates existing products
 - Maps between snake_case DB columns and camelCase JS properties
 - `available` column (INTEGER: 1=available, 0=sold) filters out sold products
 - `getAllProducts()` only returns available products by default (pass `true` to include all)
 - `addProducts()` automatically marks products as unavailable if they're not in current scrape results
 - Returns `{ newProducts, updatedProducts, markedUnavailable }`
+- Uses connection pooling for better performance
+- Supports both local development (via Cloud SQL Proxy) and production deployment
 
 **Validator (`validator.js`)** - Optional
 - Alternative validation method that fetches individual product pages
@@ -103,6 +107,8 @@ GearHunter is a real-time web scraper and notification system for Long & McQuade
 - Uses ES modules (`"type": "module"` in package.json)
 - Product ID extracted from URL is critical for deduplication
 - Scraping logic is duplicated in both `scraper.js` and `scheduler.js`
-- No test suite exists (`"test": "test"` is placeholder)
+- PostgreSQL database with Google Cloud SQL for production
 - JSON backups created even though database is primary storage
-- Database connection opened/closed for each API request (no connection pooling)
+- Database connection opened/closed for each API request
+- Environment variables configured via `.env` file for local development
+- Automatic Cloud SQL connection for production deployments via Cloud Run
