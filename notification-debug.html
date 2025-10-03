@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notification Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .step { margin: 20px 0; padding: 15px; border-left: 4px solid #4CAF50; background: #f9f9f9; }
+        .error { border-left-color: #f44336; background: #ffebee; }
+        .warning { border-left-color: #ff9800; background: #fff3e0; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        .output { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Chrome Notification Debugging</h1>
+    
+    <div class="step">
+        <h3>Step 1: Browser Support Check</h3>
+        <button onclick="checkSupport()">Check Browser Support</button>
+        <div id="supportResult" class="output"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Permission Status</h3>
+        <button onclick="checkPermission()">Check Current Permission</button>
+        <button onclick="requestPermission()">Request Permission</button>
+        <div id="permissionResult" class="output"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Simple Test Notification</h3>
+        <button onclick="testBasicNotification()">Send Basic Notification</button>
+        <div id="basicResult" class="output"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 4: Advanced Test</h3>
+        <button onclick="testAdvancedNotification()">Send Advanced Notification</button>
+        <div id="advancedResult" class="output"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 5: Chrome-Specific Checks</h3>
+        <button onclick="chromeSpecificChecks()">Run Chrome Checks</button>
+        <div id="chromeResult" class="output"></div>
+    </div>
+
+    <div class="step">
+        <h3>Manual Checks</h3>
+        <p><strong>🔗 Chrome Settings Links:</strong></p>
+        <ul>
+            <li><a href="chrome://settings/content/notifications" target="_blank">Chrome Notification Settings</a></li>
+            <li><a href="chrome://settings/privacy" target="_blank">Privacy Settings</a></li>
+            <li>Check if "Do Not Disturb" mode is enabled on your system</li>
+            <li>Check Chrome Extensions that might block notifications</li>
+        </ul>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            
+            // Change styling based on type
+            if (type === 'error') {
+                element.style.color = '#d32f2f';
+            } else if (type === 'success') {
+                element.style.color = '#2e7d32';
+            } else if (type === 'warning') {
+                element.style.color = '#f57c00';
+            }
+        }
+
+        function checkSupport() {
+            const resultId = 'supportResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, '=== BROWSER SUPPORT CHECK ===');
+            
+            // Check if Notification API exists
+            if (!('Notification' in window)) {
+                log(resultId, '❌ Notification API not supported in this browser', 'error');
+                return;
+            }
+            log(resultId, '✅ Notification API supported', 'success');
+            
+            // Check if service workers are supported (needed for some notification features)
+            if ('serviceWorker' in navigator) {
+                log(resultId, '✅ Service Workers supported', 'success');
+            } else {
+                log(resultId, '⚠️ Service Workers not supported', 'warning');
+            }
+            
+            // Check user agent
+            log(resultId, `Browser: ${navigator.userAgent}`);
+            
+            // Check if running on localhost or HTTPS
+            const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            if (isSecure) {
+                log(resultId, '✅ Running on secure context (HTTPS/localhost)', 'success');
+            } else {
+                log(resultId, '❌ Not running on secure context - notifications may not work', 'error');
+            }
+        }
+
+        function checkPermission() {
+            const resultId = 'permissionResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, '=== PERMISSION STATUS ===');
+            log(resultId, `Current permission: ${Notification.permission}`);
+            
+            switch (Notification.permission) {
+                case 'granted':
+                    log(resultId, '✅ Notifications are allowed', 'success');
+                    break;
+                case 'denied':
+                    log(resultId, '❌ Notifications are blocked', 'error');
+                    log(resultId, 'To fix: Click the lock icon → Notifications → Allow', 'warning');
+                    break;
+                case 'default':
+                    log(resultId, '⚠️ Permission not yet requested', 'warning');
+                    break;
+            }
+        }
+
+        async function requestPermission() {
+            const resultId = 'permissionResult';
+            log(resultId, '--- REQUESTING PERMISSION ---');
+            
+            try {
+                const permission = await Notification.requestPermission();
+                log(resultId, `Permission request result: ${permission}`);
+                
+                if (permission === 'granted') {
+                    log(resultId, '✅ Permission granted! You can now receive notifications', 'success');
+                } else if (permission === 'denied') {
+                    log(resultId, '❌ Permission denied', 'error');
+                    log(resultId, 'Manual fix needed: Chrome settings → Site settings → Notifications', 'warning');
+                } else {
+                    log(resultId, '⚠️ Permission dismissed', 'warning');
+                }
+            } catch (error) {
+                log(resultId, `Error requesting permission: ${error.message}`, 'error');
+            }
+        }
+
+        function testBasicNotification() {
+            const resultId = 'basicResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, '=== BASIC NOTIFICATION TEST ===');
+            
+            if (Notification.permission !== 'granted') {
+                log(resultId, '❌ Cannot send notification - permission not granted', 'error');
+                log(resultId, 'First click "Request Permission" above', 'warning');
+                return;
+            }
+            
+            try {
+                const notification = new Notification('Test Notification', {
+                    body: 'This is a basic test notification from GearHunter',
+                    icon: '/favicon.ico'
+                });
+                
+                log(resultId, '✅ Basic notification sent', 'success');
+                
+                notification.onclick = function() {
+                    log(resultId, '🖱️ Notification clicked!', 'success');
+                    window.focus();
+                };
+                
+                notification.onshow = function() {
+                    log(resultId, '👁️ Notification shown', 'success');
+                };
+                
+                notification.onerror = function() {
+                    log(resultId, '❌ Notification error occurred', 'error');
+                };
+                
+                notification.onclose = function() {
+                    log(resultId, '❌ Notification closed', 'warning');
+                };
+                
+            } catch (error) {
+                log(resultId, `❌ Error creating notification: ${error.message}`, 'error');
+            }
+        }
+
+        function testAdvancedNotification() {
+            const resultId = 'advancedResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, '=== ADVANCED NOTIFICATION TEST ===');
+            
+            if (Notification.permission !== 'granted') {
+                log(resultId, '❌ Cannot send notification - permission not granted', 'error');
+                return;
+            }
+            
+            try {
+                const notification = new Notification('🎸 New GearHunter Deal!', {
+                    body: 'Fender Stratocaster - $899 (Save $400!)',
+                    icon: '/favicon.ico',
+                    tag: 'gearhunter-deal',
+                    requireInteraction: true,
+                    silent: false,
+                    timestamp: Date.now()
+                });
+                
+                log(resultId, '✅ Advanced notification sent with options', 'success');
+                
+                // Auto-close after 5 seconds
+                setTimeout(() => {
+                    notification.close();
+                    log(resultId, '⏰ Auto-closed notification after 5 seconds', 'warning');
+                }, 5000);
+                
+            } catch (error) {
+                log(resultId, `❌ Error creating advanced notification: ${error.message}`, 'error');
+            }
+        }
+
+        function chromeSpecificChecks() {
+            const resultId = 'chromeResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, '=== CHROME-SPECIFIC CHECKS ===');
+            
+            // Check if Chrome
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+            log(resultId, `Is Chrome: ${isChrome ? 'Yes' : 'No'}`);
+            
+            // Check Chrome version
+            const chromeMatch = navigator.userAgent.match(/Chrome\/(\d+)/);
+            if (chromeMatch) {
+                const version = parseInt(chromeMatch[1]);
+                log(resultId, `Chrome version: ${version}`);
+                
+                if (version < 22) {
+                    log(resultId, '❌ Chrome version too old for notifications', 'error');
+                } else {
+                    log(resultId, '✅ Chrome version supports notifications', 'success');
+                }
+            }
+            
+            // Check if notifications are globally disabled
+            log(resultId, 'Manual checks needed:');
+            log(resultId, '1. Chrome Settings → Privacy and security → Site Settings → Notifications');
+            log(resultId, '2. Ensure "Sites can ask to send notifications" is ON');
+            log(resultId, '3. Check that localhost:3000 is not in "Not allowed to send notifications"');
+            log(resultId, '4. Check system Do Not Disturb mode');
+            log(resultId, '5. Check Chrome extensions that might block notifications');
+            
+            // Test if notifications show immediately
+            if (Notification.permission === 'granted') {
+                log(resultId, 'Testing immediate notification...');
+                try {
+                    const testNotif = new Notification('Chrome Debug Test', {
+                        body: 'If you see this, Chrome notifications are working!',
+                        requireInteraction: false
+                    });
+                    
+                    setTimeout(() => testNotif.close(), 3000);
+                    log(resultId, '✅ Chrome debug notification sent', 'success');
+                } catch (error) {
+                    log(resultId, `❌ Chrome debug notification failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Auto-run basic checks on page load
+        window.addEventListener('load', function() {
+            checkSupport();
+            checkPermission();
+        });
+    </script>
+</body>
+</html>
